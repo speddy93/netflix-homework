@@ -98,7 +98,6 @@ public class TestReservation_Sample {
         eventList.add(generateNewEvent("footballParty","2018-01-02T10","2018-01-02T11",TEST_Owner2));
         eventList.add(generateNewEvent("clown","2017-01-01T10","2017-01-01T11",TEST_Owner2));
         eventList.add(generateNewEvent("clown2","2017-01-01T10","2017-01-01T12",TEST_Owner));
-        eventList.add(generateNewEvent("clown2","2017-01-01","2017-01-01",TEST_Owner));
 
         robin.reserve(eventList.get(0),resources.get(0));
         robin.reserve(eventList.get(1),resources.get(0));
@@ -108,7 +107,48 @@ public class TestReservation_Sample {
 
         assertEquals(2,robin.getAllReservationsForOwner(TEST_Owner,new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
         assertEquals(2,robin.getAllReservationsForOwner(TEST_Owner2,new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
+        assertEquals(2,robin.getAllReservationsForResource(resources.get(0),new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
+        assertEquals(1,robin.getAllReservationsForResource(resources.get(2),new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
+        assertEquals(0,robin.findAvailableResources(eventList.get(3)).size());
+        assertEquals(7,robin.findAvailableResources(eventList.get(4)).size());
     }
+
+//    @Test
+//    public void givenMultiThread_whenBlockSync() {
+//        ExecutorService es = Executors.newFixedThreadPool(5);
+//        Collection<Callable> tasks = Arrays.asList(new Callable[]{
+//
+//        });
+//        es.invokeAll(tasks);
+//
+//    }
+//
+//    public void run(){
+//        List<Event> eventList = new ArrayList<>();
+//        List<Resource> resources = new ArrayList<>();
+//        ReservationSystem_Management management =(ReservationSystem_Management)robin;
+//
+//        resources.add(generateResource("basketball"));
+//        resources.add(generateResource("footbal"));
+//        resources.add(generateResource("clown"));
+//        resources.add(generateResource("pipe"));
+//        resources.add(generateResource("balloon"));
+//        resources.add(generateResource("test"));
+//        resources.forEach(management::addResourceIfNotExists);
+//
+//        eventList.add(generateNewEvent("basketballParty","2018-01-02","2018-01-03",TEST_Owner));
+//        eventList.add(generateNewEvent("basketballParty","2018-01-03","2018-01-04",TEST_Owner));
+//        eventList.add(generateNewEvent("footballParty","2018-01-02T10","2018-01-02T11",TEST_Owner2));
+//        eventList.add(generateNewEvent("clown","2017-01-01T10","2017-01-01T11",TEST_Owner2));
+//        eventList.add(generateNewEvent("clown2","2017-01-01T10","2017-01-01T12",TEST_Owner));
+//
+//        robin.reserve(eventList.get(0),resources.get(0));
+//        robin.reserve(eventList.get(1),resources.get(0));
+//        robin.reserve(eventList.get(2),resources.get(1));
+//        robin.reserve(eventList.get(3),resources.get(2));
+//        robin.reserve(eventList.get(4),resources.get(2));
+//
+//    }
 
     public Event generateNewEvent(final String name, final String start, final String end, final String owner){
         return new Event() {
