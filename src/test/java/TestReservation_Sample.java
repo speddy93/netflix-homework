@@ -3,7 +3,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -103,7 +106,7 @@ public class TestReservation_Sample {
         robin.reserve(eventList.get(1),resources.get(0));
         robin.reserve(eventList.get(2),resources.get(1));
         robin.reserve(eventList.get(3),resources.get(2));
-        robin.reserve(eventList.get(4),resources.get(2));
+//        robin.reserve(eventList.get(4),resources.get(2));
 
         assertEquals(2,robin.getAllReservationsForOwner(TEST_Owner,new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
         assertEquals(2,robin.getAllReservationsForOwner(TEST_Owner2,new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
@@ -113,42 +116,65 @@ public class TestReservation_Sample {
         assertEquals(7,robin.findAvailableResources(eventList.get(4)).size());
     }
 
-//    @Test
-//    public void givenMultiThread_whenBlockSync() {
-//        ExecutorService es = Executors.newFixedThreadPool(5);
-//        Collection<Callable> tasks = Arrays.asList(new Callable[]{
-//
-//        });
-//        es.invokeAll(tasks);
-//
-//    }
-//
-//    public void run(){
-//        List<Event> eventList = new ArrayList<>();
-//        List<Resource> resources = new ArrayList<>();
-//        ReservationSystem_Management management =(ReservationSystem_Management)robin;
-//
-//        resources.add(generateResource("basketball"));
-//        resources.add(generateResource("footbal"));
-//        resources.add(generateResource("clown"));
-//        resources.add(generateResource("pipe"));
-//        resources.add(generateResource("balloon"));
-//        resources.add(generateResource("test"));
+    @Test
+    public void givenMultiThread() throws InterruptedException {
+
+        List<Event> eventList = new ArrayList<>();
+        List<Resource> resources = new ArrayList<>();
+        ReservationSystem_Management management =(ReservationSystem_Management)robin;
+
+        resources.add(generateResource("basketball"));
+        resources.add(generateResource("footbal"));
+        resources.add(generateResource("clown"));
+        resources.add(generateResource("pipe"));
+        resources.add(generateResource("balloon"));
+        resources.add(generateResource("test"));
 //        resources.forEach(management::addResourceIfNotExists);
-//
-//        eventList.add(generateNewEvent("basketballParty","2018-01-02","2018-01-03",TEST_Owner));
-//        eventList.add(generateNewEvent("basketballParty","2018-01-03","2018-01-04",TEST_Owner));
-//        eventList.add(generateNewEvent("footballParty","2018-01-02T10","2018-01-02T11",TEST_Owner2));
-//        eventList.add(generateNewEvent("clown","2017-01-01T10","2017-01-01T11",TEST_Owner2));
-//        eventList.add(generateNewEvent("clown2","2017-01-01T10","2017-01-01T12",TEST_Owner));
-//
-//        robin.reserve(eventList.get(0),resources.get(0));
-//        robin.reserve(eventList.get(1),resources.get(0));
-//        robin.reserve(eventList.get(2),resources.get(1));
-//        robin.reserve(eventList.get(3),resources.get(2));
-//        robin.reserve(eventList.get(4),resources.get(2));
-//
-//    }
+
+        eventList.add(generateNewEvent("basketballParty","2018-01-02","2018-01-03",TEST_Owner));
+        eventList.add(generateNewEvent("basketballParty","2018-01-03","2018-01-04",TEST_Owner));
+        eventList.add(generateNewEvent("footballParty","2018-01-02T10","2018-01-02T11",TEST_Owner2));
+        eventList.add(generateNewEvent("clown","2017-01-01T10","2017-01-01T11",TEST_Owner2));
+        eventList.add(generateNewEvent("clown2","2017-01-01T10","2017-01-01T12",TEST_Owner));
+
+        ExecutorService es = Executors.newFixedThreadPool(2);
+        Collection<Callable<Object>> tasks = Arrays.asList(() -> {
+                    management.addResourceIfNotExists(resources.get(2));
+                    management.addResourceIfNotExists(resources.get(0));
+                    robin.reserve(eventList.get(0),resources.get(0));
+                    robin.reserve(eventList.get(2),resources.get(1));
+                    return null;
+                },
+                () -> {
+                    management.addResourceIfNotExists(resources.get(2));
+                    management.addResourceIfNotExists(resources.get(3));
+                    management.addResourceIfNotExists(resources.get(5));
+                    management.addResourceIfNotExists(resources.get(1));
+                    robin.reserve(eventList.get(3),resources.get(2));
+                    management.addResourceIfNotExists(resources.get(4));
+                    robin.reserve(eventList.get(1),resources.get(0));
+                    return null;
+                });
+
+        List<Future<Object>> futures = es.invokeAll(tasks);
+        futures.forEach(objectFuture -> {
+            try {
+                objectFuture.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        });
+
+        assertEquals(2,robin.getAllReservationsForOwner(TEST_Owner,new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
+        assertEquals(2,robin.getAllReservationsForOwner(TEST_Owner2,new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
+        assertEquals(2,robin.getAllReservationsForResource(resources.get(0),new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
+        assertEquals(1,robin.getAllReservationsForResource(resources.get(2),new DateTime("2017-01-01"),new DateTime("2018-02-01")).size());
+        assertEquals(0,robin.findAvailableResources(eventList.get(3)).size());
+        assertEquals(7,robin.findAvailableResources(eventList.get(4)).size());
+
+    }
 
     public Event generateNewEvent(final String name, final String start, final String end, final String owner){
         return new Event() {

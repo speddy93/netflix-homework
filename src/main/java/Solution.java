@@ -12,24 +12,19 @@ public class Solution implements ReservationSystem, ReservationSystem_Management
 
     public Solution(){}
 
-    //3 approaches to the locking work
-    //1. Create a lock object - and any method that does updates would take a hold of the lock so that things are not read when things are being written
-    //2. Create a volatile object with syncronization to prevent read and write access at the same time
-    //3. syncronization at the variable instead of method
-
     @Override
     public synchronized ReservationTicket reserve(Event event, Resource resource) {
-        ReservationTicket reservationTicket = null;
-        validateInterval(event.getStartTime(),event.getEndTime(),"Event "+event.getName());
-        if(resources.containsKey(resource.getId())) {
-            if (getReservationsForOwner(event.getOwner(), event.getStartTime(), event.getEndTime(),false).size() == 0) {
-                if (getReservationsForResources(resource, event.getStartTime(), event.getEndTime(),false).size() == 0) {
-                    reservationTicket = new Reservation(event, resource);
+        validateInterval(event.getStartTime(), event.getEndTime(), "Event " + event.getName());
+        if (resources.containsKey(resource.getId())) {
+            if (getReservationsForOwner(event.getOwner(), event.getStartTime(), event.getEndTime(), false).size() == 0) {
+                if (getReservationsForResources(resource, event.getStartTime(), event.getEndTime(), false).size() == 0) {
+                    ReservationTicket reservationTicket = new Reservation(event, resource);
                     reservations.add(reservationTicket);
+                    return reservationTicket;
                 }
             }
         }
-        return reservationTicket;
+        return null;
     }
 
     @Override
@@ -37,7 +32,7 @@ public class Solution implements ReservationSystem, ReservationSystem_Management
         validateInterval(event.getStartTime(),event.getEndTime(), "Event "+event.getName());
         if(getReservationsForOwner(event.getOwner(),event.getStartTime(),event.getEndTime(),false).size()==0){
             //Find remaining resources based on interval
-            return resources.keySet().parallelStream()
+            return resources.keySet().stream()
                     .map(resources::get)
                     .filter(resource -> getReservationsForResources(resource,event.getStartTime(),event.getEndTime(),false).size()==0)
                     .collect(Collectors.toList());
@@ -54,7 +49,7 @@ public class Solution implements ReservationSystem, ReservationSystem_Management
         validateInterval(startTime,endTime,"Search Range");
         Interval interval = new Interval(startTime, endTime);
 
-        Stream<ReservationTicket> reservationTicketStream = reservations.parallelStream().filter(reservationTicket ->
+        Stream<ReservationTicket> reservationTicketStream = reservations.stream().filter(reservationTicket ->
                 reservationTicket.getEvent().getOwner().equals(owner) &&
                         intervalOverlaps(interval,
                                 new Interval(reservationTicket.getEvent().getStartTime(),reservationTicket.getEvent().getEndTime())));
@@ -79,7 +74,7 @@ public class Solution implements ReservationSystem, ReservationSystem_Management
     private List<ReservationTicket> getReservationsForResources(Resource resource, DateTime startTime, DateTime endTime, boolean all) {
         validateInterval(startTime,endTime,"Search Range");
         Interval interval = new Interval(startTime, endTime);
-        Stream<ReservationTicket> reservationTicketStream = reservations.parallelStream().filter(reservationTicket ->
+        Stream<ReservationTicket> reservationTicketStream = reservations.stream().filter(reservationTicket ->
                 reservationTicket.getResource().getId().equals(resource.getId()) &&
                         intervalOverlaps(interval,
                                 new Interval(reservationTicket.getEvent().getStartTime(),reservationTicket.getEvent().getEndTime())));
