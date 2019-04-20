@@ -14,6 +14,7 @@ public class Solution implements ReservationSystem, ReservationSystem_Management
 
     @Override
     public synchronized ReservationTicket reserve(Event event, Resource resource) {
+        String message;
         validateInterval(event.getStartTime(), event.getEndTime(), "Event " + event.getName());
         if (resources.containsKey(resource.getId())) {
             if (getReservationsForOwner(event.getOwner(), event.getStartTime(), event.getEndTime(), false).size() == 0) {
@@ -22,9 +23,18 @@ public class Solution implements ReservationSystem, ReservationSystem_Management
                     reservations.add(reservationTicket);
                     return reservationTicket;
                 }
+                else{
+                    message = "Resource "+resource.getId()+" is already reserved at the time of this event";
+                }
+            }
+            else{
+                message = "Owner "+event.getOwner()+" has already reserved a resource at this time";
             }
         }
-        return null;
+        else{
+            message = "Resource "+resource.getId()+" does not exist";
+        }
+        throw new RuntimeException(message);
     }
 
     @Override
